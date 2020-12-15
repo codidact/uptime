@@ -51,7 +51,6 @@ end
 
 def log(text)
   puts "[#{now}] #{text}"
-  $stdout.ioflush
 end
 
 log "Initialized. #{@monitors.count} monitors pending."
