@@ -1,0 +1,36 @@
+# Emails From address
+from: status@codidact.com
+
+# Credentials for SES for sending notification emails
+ses:
+  access_key_id: ~
+  secret_access_key: ~
+
+# Define endpoints to monitor in here.
+monitors:
+    # Name each of your monitors something descriptive so you know what they do.
+  - name: Communities
+
+    # This is the URL that the monitor should visit to determine if your
+    # endpoint is up or down.
+    test_url: https://meta.codidact.com/
+
+    # This is an email address to which to send emails indicating the current
+    # status of the endpoint. This is designed for StatusPage but may work for
+    # other services.
+    notification_address: example@statuspage
+
+    # How many seconds apart should each test be?
+    frequency: 300
+
+    # When a test fails, testing frequency will be changed to this value, so
+    # that you can increase (for quicker change detection) or decrease (for 
+    # relieving pressure on your host) frequency.
+    failed_retest: 30
+
+    # This many tests must fail before a DOWN notification is sent.
+    failure_count: 4
+
+    # This many tests must succeed when the endpoint is DOWN before an UP
+    # notification is sent.
+    success_count: 2
