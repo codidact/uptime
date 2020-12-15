@@ -8,8 +8,6 @@ require 'colorize'
 @ses = AWS::SES::Base.new(@config.ses)
 @monitors = @config.monitors
 
-puts "Initialized. #{@monitors.count} monitors pending."
-
 def test(url)
   begin
     res = Net::HTTP.get_response(URI(url))
@@ -29,13 +27,13 @@ def test(url)
   end
 end
 
-def send_notification(address, type)
+def send_notification(address, type, body: nil)
   begin
     if address.is_a? String
-      @ses.send_email(to: address, source: @config.from, subject: type)
+      @ses.send_email(to: address, source: @config.from, subject: type, text_body: body)
     elsif address.is_a? Array
       address.each do |a|
-        @ses.send_email(to: address, source: @config.from, subject: type)
+        @ses.send_email(to: address, source: @config.from, subject: type, text_body: body)
       end
     end
     true
@@ -43,6 +41,16 @@ def send_notification(address, type)
     false
   end
 end
+
+def now
+  DateTime.now.strftime '%Y-%m-%d %H:%M:%S'
+end
+
+def log(text)
+  puts "[#{now}] #{text}"
+end
+
+log "Initialized. #{@monitors.count} monitors pending."
 
 threads = @monitors.map do |monitor|
   monitor = OpenStruct.new(monitor)
@@ -59,39 +67,41 @@ threads = @monitors.map do |monitor|
       result, code = test(monitor.test_url)
 
       if currently_up && result
-        puts "#{monitor.name}: currently #{up}, tested #{up} (#{code}) 💤 #{monitor.frequency}"
+        log "#{monitor.name}: currently #{up}, tested #{up} (#{code}) 💤 #{monitor.frequency}"
         sleep monitor.frequency
       elsif currently_up && !result
         failures += 1
-        puts "#{monitor.name}: currently #{up}, tested #{down} #{failures}/#{monitor.failure_count} (#{code}) 💤 #{monitor.failed_retest}"
+        log "#{monitor.name}: currently #{up}, tested #{down} #{failures}/#{monitor.failure_count} (#{code}) 💤 #{monitor.failed_retest}"
         if failures >= monitor.failure_count
-          if send_notification(monitor.notification_address, 'DOWN')
+          if send_notification(monitor.notification_address, 'DOWN',
+                               body: "#{monitor.name} detected DOWN (#{failures} failures, latest #{now})")
             currently_up = false
             successes = 0
-            puts "#{' ' * monitor.name.length}: #{down} notification sent, status set to #{down}"
+            log "#{' ' * monitor.name.length}: #{down} notification sent, status set to #{down}"
           else
-            puts "#{' ' * monitor.name.length}: failed to send notification, will retry next round"
+            log "#{' ' * monitor.name.length}: failed to send notification, will retry next round"
           end
         end
         sleep monitor.failed_retest
       elsif !currently_up && result
         successes += 1
         if successes >= monitor.success_count
-          puts "#{monitor.name}: currently #{down}, tested #{up} #{successes}/#{monitor.success_count} (#{code}) 💤 #{monitor.frequency}"
-          if send_notification(monitor.notification_address, 'UP')
+          log "#{monitor.name}: currently #{down}, tested #{up} #{successes}/#{monitor.success_count} (#{code}) 💤 #{monitor.frequency}"
+          if send_notification(monitor.notification_address, 'UP',
+                               body: "#{monitor.name} detected UP (#{successes} successes, latest #{now})")
             currently_up = true
             failures = 0
-            puts "#{' ' * monitor.name.length}: #{up} notification sent, status set to #{up}"
+            log "#{' ' * monitor.name.length}: #{up} notification sent, status set to #{up}"
           else
-            puts "#{' ' * monitor.name.length}: failed to send notification, will retry next round"
+            log "#{' ' * monitor.name.length}: failed to send notification, will retry next round"
           end
           sleep monitor.frequency
         else
-          puts "#{monitor.name}: currently #{down}, tested #{up} #{successes}/#{monitor.success_count} (#{code}) 💤 #{monitor.failed_retest}"
+          log "#{monitor.name}: currently #{down}, tested #{up} #{successes}/#{monitor.success_count} (#{code}) 💤 #{monitor.failed_retest}"
           sleep monitor.failed_retest
         end
       elsif !currently_up && !result
-        puts "#{monitor.name}: currently #{down}, tested #{down} (#{code}) 💤 #{monitor.frequency}"
+        log "#{monitor.name}: currently #{down}, tested #{down} (#{code}) 💤 #{monitor.frequency}"
         successes = 0
         sleep monitor.failed_retest
       end
