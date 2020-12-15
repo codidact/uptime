@@ -1,8 +1,11 @@
 require 'net/http'
 require 'yaml'
 require 'active_support/core_ext/hash/keys'
+require 'io/console'
 require 'aws/ses'
 require 'colorize'
+
+$stdout.sync = true
 
 @config = OpenStruct.new(YAML.load_file('config.yml').deep_symbolize_keys)
 @ses = AWS::SES::Base.new(@config.ses)
@@ -48,6 +51,7 @@ end
 
 def log(text)
   puts "[#{now}] #{text}"
+  $stdout.ioflush
 end
 
 log "Initialized. #{@monitors.count} monitors pending."
