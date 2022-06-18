@@ -36,7 +36,7 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport (~> 6.1)
-  aws-ses-v4 (~> 0.8)
+  aws-ses-v4
   colorize (~> 0.8)
 
 RUBY VERSION
