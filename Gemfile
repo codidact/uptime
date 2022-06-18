@@ -1,4 +1,4 @@
-ruby '2.6.6'
+ruby '2.7.6'
 source 'https://rubygems.org'
 
 gem 'aws-ses-v4', '~> 0.8'
