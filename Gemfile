@@ -1,4 +1,4 @@
-ruby '2.7.6'
+ruby '>= 2.7', '< 4'
 source 'https://rubygems.org'
 
 gem 'aws-ses-v4', require: 'aws/ses'
