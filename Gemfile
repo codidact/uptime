@@ -1,6 +1,6 @@
-ruby '2.7.6'
+ruby '~>3.2'
 source 'https://rubygems.org'
 
 gem 'aws-ses-v4', require: 'aws/ses'
-gem 'activesupport', '~> 6.1'
-gem 'colorize', '~> 0.8'
+gem 'activesupport', '~> 8.0'
+gem 'colorize', '~> 1.1'
