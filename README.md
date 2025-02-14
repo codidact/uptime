@@ -20,7 +20,8 @@ Follow the [Install](#install) steps to set up for development. Contributions ar
 target the `master` branch for your pull request. If you intend to add significant or breaking
 changes, it is encouraged to open an issue first so that your intentions can be discussed.
 
-Contributions and contributors must follow the [Codidact Code of Conduct](?tab=coc-ov-file).
+Contributions and contributors must follow the
+[Codidact Code of Conduct](https://github.com/codidact/uptime?tab=coc-ov-file).
 
 ## License
 MIT licensed.
