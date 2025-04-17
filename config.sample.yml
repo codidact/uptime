@@ -1,6 +1,3 @@
-# Emails From address
-from: status@codidact.com
-
 # Credentials for SES for sending notification emails
 ses:
   access_key_id: ~
@@ -14,11 +11,6 @@ monitors:
     # This is the URL that the monitor should visit to determine if your
     # endpoint is up or down.
     test_url: https://meta.codidact.com/
-
-    # This is an email address to which to send emails indicating the current
-    # status of the endpoint. This is designed for StatusPage but may work for
-    # other services.
-    notification_address: example@statuspage
 
     # How many seconds apart should each test be?
     frequency: 300
@@ -34,3 +26,28 @@ monitors:
     # This many tests must succeed when the endpoint is DOWN before an UP
     # notification is sent.
     success_count: 2
+
+    # Defines endpoints to which to send notifications when the status of components changes.
+    notifications:
+      # Email notifications, for example to StatusPage, just need an email address to send to.
+      - type: email
+        from: status@codidact.org
+        address: example@statuspage
+        subject: '$Status'
+        body: '$Component is $Status'
+
+      # You can also set up notifications in Discord channels like this:
+      - type: discord
+
+        # This is the webhook URL copied when you create your webhook in Discord.
+        url: https://discord.com/api/webhooks/123/token
+
+        # This will override the default username of your webhook bot.
+        username: Captain Hook
+
+        # List users or roles the message should mention. Use just the user ID for users, prefix with & for roles.
+        mentions:
+          - 1234
+          - '&1234'
+
+        content: '$Mentions ping! $Component is $Status!'
