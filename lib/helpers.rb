@@ -20,13 +20,13 @@ module Uptime
           if check_res.is_a? Net::HTTPSuccess
             return [res.is_a?(Net::HTTPSuccess), res.code]
           else
-            return [true, '-99 (client fail)']
+            return [true, "#{res.code} (client fail)"]
           end
         end
     
         [res.is_a?(Net::HTTPSuccess), res.code]
-      rescue
-        [false, '-53 (client fail)']
+      rescue => ex
+        [false, "#<#{ex.class}> (client fail)"]
       end
     end
   end
