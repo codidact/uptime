@@ -35,6 +35,7 @@ module Uptime
           result, code = test(@test_url)
     
           if currently_up && result
+            failures = 0
             log "#{@name}: currently #{up}, tested #{up} (#{code}) 💤 #{@frequency}"
             sleep @frequency
           elsif currently_up && !result
@@ -67,6 +68,7 @@ module Uptime
               sleep @failed_retest
             end
           elsif !currently_up && !result
+            successes = 0
             log "#{@name}: currently #{down}, tested #{down} (#{code}) 💤 #{@failed_retest}"
             successes = 0
             sleep @failed_retest
