@@ -1,5 +1,6 @@
 # uptime
-Simple self-hosted configurable up-or-down checking tool, sending updates to StatusPage.
+Simple self-hosted configurable up-or-down checking tool, sending notifications via email (for example to StatusPage) or
+Discord webhook.
 
 ## Install
 You'll need Ruby and Bundler installed as a prerequisite.
@@ -13,7 +14,7 @@ and you'll need to configure your monitors. Follow the comments in the file and 
 difficult.
 
 Once you've got it set up, use `ruby monitor.rb` to run it. It'll run forever, or until you Ctrl-C
-it.
+it. You can also set it up as a service for unattended running.
 
 ## Development & Contributing
 Follow the [Install](#install) steps to set up for development. Contributions are welcome - please 
