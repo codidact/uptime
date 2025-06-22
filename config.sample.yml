@@ -3,6 +3,10 @@ ses:
   access_key_id: ~
   secret_access_key: ~
 
+net:
+  open_timeout: 60
+  read_timeout: 60
+
 # Define endpoints to monitor in here.
 monitors:
     # Name each of your monitors something descriptive so you know what they do.

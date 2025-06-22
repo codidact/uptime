@@ -1,4 +1,5 @@
 require 'json'
+require 'logger'
 require 'net/http'
 require_relative 'helpers'
 
@@ -11,12 +12,21 @@ module Uptime
     ##
     # Create a new Monitor instance.
     # @param config [Hash<Symbol, String>] The monitor's configuration as parsed from YAML.
+    # @param ses [AWS::SES::Base] An initialized SES instance to use for email sending.
+    # @param net_config [Hash<Symbol, String>] Network configuration from YAML.
     # @return [Monitor]
-    def initialize(config, ses)
+    def initialize(config, ses, net_config)
       [:name, :test_url, :frequency, :failed_retest, :failure_count, :success_count, :notifications].each do |sym|
         send "#{sym}=", config[sym]
       end
       @ses = ses
+      @net_config = net_config
+      @logger = Logger.new($stdout)
+      @logger.formatter = proc do |sev, dt, prog, msg|
+        dt = dt.strftime '%Y-%m-%d %H:%M:%S'
+        sev = sev.rjust(5, ' ')
+        "[#{dt}] #{sev} : #{msg}\n"
+      end
     end
 
     ##
@@ -36,40 +46,40 @@ module Uptime
     
           if currently_up && result
             failures = 0
-            log "#{@name}: currently #{up}, tested #{up} (#{code}) 💤 #{@frequency}"
+            @logger.info "#{@name}: currently #{up}, tested #{up} (#{code}) 💤 #{@frequency}"
             sleep @frequency
           elsif currently_up && !result
             failures += 1
-            log "#{@name}: currently #{up}, tested #{down} #{failures}/#{@failure_count} (#{code}) 💤 #{@failed_retest}"
+            @logger.info "#{@name}: currently #{up}, tested #{down} #{failures}/#{@failure_count} (#{code}) 💤 #{@failed_retest}"
             if failures >= @failure_count
               if send_notifications 'DOWN'
                 currently_up = false
                 successes = 0
-                log "#{@name}: #{down} notification sent, status set to #{down}"
+                @logger.warn "#{@name}: #{down} notification sent, status set to #{down}"
               else
-                log "#{@name}: failed to send notification, will retry next round"
+                @logger.warn "#{@name}: failed to send notification, will retry next round"
               end
             end
             sleep @failed_retest
           elsif !currently_up && result
             successes += 1
             if successes >= @success_count
-              log "#{@name}: currently #{down}, tested #{up} #{successes}/#{@success_count} (#{code}) 💤 #{@frequency}"
+              @logger.info "#{@name}: currently #{down}, tested #{up} #{successes}/#{@success_count} (#{code}) 💤 #{@frequency}"
               if send_notifications 'UP'
                 currently_up = true
                 failures = 0
-                log "#{@name}: #{up} notification sent, status set to #{up}"
+                @logger.info "#{@name}: #{up} notification sent, status set to #{up}"
               else
-                log "#{@name}: failed to send notification, will retry next round"
+                @logger.warn "#{@name}: failed to send notification, will retry next round"
               end
               sleep @frequency
             else
-              log "#{@name}: currently #{down}, tested #{up} #{successes}/#{@success_count} (#{code}) 💤 #{@failed_retest}"
+              @logger.info "#{@name}: currently #{down}, tested #{up} #{successes}/#{@success_count} (#{code}) 💤 #{@failed_retest}"
               sleep @failed_retest
             end
           elsif !currently_up && !result
             successes = 0
-            log "#{@name}: currently #{down}, tested #{down} (#{code}) 💤 #{@failed_retest}"
+            @logger.info "#{@name}: currently #{down}, tested #{down} (#{code}) 💤 #{@failed_retest}"
             successes = 0
             sleep @failed_retest
           end
@@ -87,7 +97,7 @@ module Uptime
         when 'discord'
           send_discord_webhook(notif, status)
         else
-          log "#{@name}: unrecognized notification type #{notif[:type]}"
+          @logger.warn "#{@name}: unrecognized notification type #{notif[:type]}"
         end
       end
     end
@@ -105,7 +115,12 @@ module Uptime
           end
         end
         true
-      rescue
+      rescue => ex
+        @logger.error "#{@name}: failed to send email notification (error) #{address}"
+        @logger.debug "#{ex.class}: #{ex.message}"
+        ex.backtrace.each do |line|
+          @logger.debug line
+        end
         false
       end
     end
@@ -120,11 +135,15 @@ module Uptime
       begin
         response = Net::HTTP.post(uri, params.to_json, headers)
         unless response.is_a? Net::HTTPSuccess
-          log "#{@name}: failed to send Discord webhook (fail) #{notif[:url]}"
+          @logger.warn "#{@name}: failed to send Discord webhook (fail) (#{response.code}) #{notif[:url]}"
         end
         response.is_a? Net::HTTPSuccess
-      rescue
-        log "#{@name}: failed to send Discord webhook (error) #{notif[:url]}"
+      rescue => ex
+        @logger.error "#{@name}: failed to send Discord webhook (error) #{notif[:url]}"
+        @logger.debug "#{ex.class}: #{ex.message}"
+        ex.backtrace.each do |line|
+          @logger.debug line
+        end
         false
       end
     end
